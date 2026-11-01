@@ -14,6 +14,8 @@ public class Config {
         public String name;
         public boolean enabled;
         public long maxPrice;
+        public String search = "";
+        public String itemId = "";
         public List<String> keywords = new ArrayList<>();
 
         public Rule(String name, boolean enabled, long maxPrice, String... kw) {
