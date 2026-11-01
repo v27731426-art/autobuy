@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "autobuy",
+  "version": "1.0.0",
+  "name": "AutoBuy",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.autobuy.AutoBuyMod"] },
+  "depends": { "fabricloader": ">=0.16.0", "minecraft": "~1.21.11", "fabric-api": "*" }
+}
