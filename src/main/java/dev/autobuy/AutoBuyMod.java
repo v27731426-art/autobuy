@@ -17,6 +17,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,6 +30,7 @@ public class AutoBuyMod implements ClientModInitializer {
     static Stage stage = Stage.OPEN;
     static int cooldown = 0;
     static int confirmWait = 0;
+    static int ruleIndex = 0;
     static final Random RNG = new Random();
     static KeyBinding toggleKey, menuKey;
 
@@ -48,6 +51,12 @@ public class AutoBuyMod implements ClientModInitializer {
         cooldown = c.minDelayTicks + RNG.nextInt(Math.max(1, c.maxDelayTicks - c.minDelayTicks + 1));
     }
 
+    static List<Config.Rule> active() {
+        List<Config.Rule> l = new ArrayList<>();
+        for (Config.Rule r : Config.I.rules) if (r.enabled) l.add(r);
+        return l;
+    }
+
     static void tick(MinecraftClient mc) {
         while (toggleKey.wasPressed()) {
             enabled = !enabled;
@@ -66,7 +75,15 @@ public class AutoBuyMod implements ClientModInitializer {
 
         if (!(handler instanceof GenericContainerScreenHandler h)) {
             if (mc.currentScreen != null) return;
-            mc.player.networkHandler.sendChatCommand("ah");
+            List<Config.Rule> act = active();
+            if (act.isEmpty()) {
+                enabled = false;
+                say(mc, "Включи хотя бы один предмет");
+                return;
+            }
+            Config.Rule pick = act.get(ruleIndex++ % act.size());
+            String cmd = (pick.search != null && !pick.search.isBlank()) ? "ah search " + pick.search : "ah";
+            mc.player.networkHandler.sendChatCommand(cmd);
             stage = Stage.SCAN;
             cooldown = 10 + RNG.nextInt(8);
             return;
@@ -103,7 +120,7 @@ public class AutoBuyMod implements ClientModInitializer {
         }
 
         int rs = Config.I.refreshSlot;
-        if (rs >= 0 && rs < size) {
+        if (active().size() <= 1 && rs >= 0 && rs < size) {
             mc.interactionManager.clickSlot(h.syncId, rs, 0, SlotActionType.PICKUP, mc.player);
         } else {
             mc.player.closeHandledScreen();
@@ -117,6 +134,10 @@ public class AutoBuyMod implements ClientModInitializer {
         String name = s.getName().getString().toLowerCase();
         for (Config.Rule r : Config.I.rules) {
             if (!r.enabled) continue;
+            if (r.itemId != null && !r.itemId.isEmpty()) {
+                if (path.equals(r.itemId)) return r;
+                continue;
+            }
             for (String k : r.keywords) {
                 String kl = k.toLowerCase();
                 if (path.contains(kl) || name.contains(kl)) return r;
@@ -149,4 +170,4 @@ public class AutoBuyMod implements ClientModInitializer {
         }
         return -1;
     }
-}
+                                            }
